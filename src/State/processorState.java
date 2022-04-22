@@ -3,7 +3,7 @@ package State;
 /**
  * An enum to store the 3 possible states a processor can be
  */
-public enum State {
+public enum processorState {
     UNKNOWN,
     ASLEEP,
     LEADER

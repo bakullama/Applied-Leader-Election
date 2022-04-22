@@ -1,5 +1,5 @@
-import Processor.Processor;
-import State.State;
+import Network.Processor.Processor;
+import State.processorState;
 
 public class Main {
     private static final int numberOfProcessors = 10;
@@ -9,7 +9,16 @@ public class Main {
         Processor [] processors = new Processor[numberOfProcessors];
 
         for (int i = 0; i < numberOfProcessors; i++) {
-            processors[i] = new Processor(i, i == numberOfProcessors -1 ? 0 : i + 1, State.UNKNOWN, port);
+            processors[i] = new Processor(i, i == numberOfProcessors -1 ? 0 : i + 1, processorState.UNKNOWN);
         }
+
+
+
     }
+
+    
+
+
+
+
 }
