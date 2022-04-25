@@ -1,5 +1,6 @@
 package Network.Processor;
 
+import Network.Packet;
 import State.processorState;
 import org.jetbrains.annotations.Contract;
 import org.jetbrains.annotations.NotNull;
@@ -36,13 +37,14 @@ public class Processor extends Thread {
         this.port = myID + 2000;
         nextPort = neighbourID + 2000;
 
-        currentRound = 0;
+        currentRound = 1;
+        leaderID = -1;
     }
 
     @Override
     public void run() {
         BufferedReader inputStream;
-        String input;
+        String input = "";
         PrintWriter outputStream;
 
         Socket nextProcessorSocket;
@@ -52,18 +54,26 @@ public class Processor extends Thread {
             // Create a new server socket
             serverSocket = new ServerSocket(port);
             serverSocket.setReuseAddress(true);
-            while (true) {
+            while (leaderID == -1) {
                 // Listen for a connection
-                client = serverSocket.accept();
-                inputStream = new BufferedReader(new InputStreamReader(client.getInputStream()));
-                input = inputStream.readLine();
+                if (currentRound != 1) {
+                    client = serverSocket.accept();
+                    inputStream = new BufferedReader(new InputStreamReader(client.getInputStream()));
+                    input = inputStream.readLine();
+                }
+
 
                 String message = calculateMessage(input);
                 Packet packet = new Packet(myID, neighbourID, currentRound, message);
-                nextProcessorSocket = new Socket("localhost", port);
+                nextProcessorSocket = new Socket("localhost", nextPort);
+
                 outputStream = new PrintWriter(nextProcessorSocket.getOutputStream(), true);
-                outputStream.println(packet.toString());
+                outputStream.println(packet);
+                outputStream.close();
+                nextProcessorSocket.close();
+                currentRound += 1;
             }
+            System.out.println("Processor: " + myID + " finished.");
         } catch (IOException err) {
             System.out.println("Error: " + err.getMessage());
         }
@@ -77,9 +87,14 @@ public class Processor extends Thread {
      */
     @Contract(pure = true)
     private @NotNull String calculateMessage(String input) {
-        inID = Integer.parseInt(input);
-        calculateSendID();
-        return Integer.toString(sendID);
+        if (currentRound != 1) {
+            Packet inputPacket = Packet.toPacket(input);
+            inID = Integer.parseInt(inputPacket.message());
+            calculateSendID();
+            return Integer.toString(sendID);
+        } else {
+            return Integer.toString(-1);
+        }
     }
 
 
@@ -106,4 +121,32 @@ public class Processor extends Thread {
         inID = ~inID; // clear input when ended
     }
 
+    /**
+     * Returns true if the processor is the leader
+     *
+     * @return whether the processor has been elected leader or not
+     */
+    public boolean isLeader() {
+        return (state == processorState.LEADER);
+    }
+
+    /**
+     * Returns my id
+     *
+     * @return the current processor's id
+     */
+    public int getMyID(){
+        return myID;
+    }
+
+
+    @Override
+    public String toString() {
+        return "proc{" +
+                "myID=" + myID +
+                ", neighbourID=" + neighbourID +
+                ", leaderID=" + leaderID +
+                ", state=" + state +
+                '}';
+    }
 }
